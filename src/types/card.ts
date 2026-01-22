@@ -16,4 +16,6 @@ export interface CardData {
   priority: Priority;
   checklist: ChecklistItem[];
   createdAt: Date;
+  completed: boolean;
+  completedAt?: Date;
 }
