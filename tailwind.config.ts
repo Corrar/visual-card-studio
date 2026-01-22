@@ -65,6 +65,12 @@ export default {
           purple: "hsl(var(--category-purple))",
           teal: "hsl(var(--category-teal))",
         },
+        priority: {
+          low: "hsl(var(--priority-low))",
+          medium: "hsl(var(--priority-medium))",
+          high: "hsl(var(--priority-high))",
+          urgent: "hsl(var(--priority-urgent))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

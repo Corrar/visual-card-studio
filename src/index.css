@@ -46,6 +46,12 @@ All colors MUST be HSL.
     --category-purple: 262 83% 58%;
     --category-teal: 173 80% 40%;
 
+    /* Priority Colors */
+    --priority-low: 142 71% 45%;
+    --priority-medium: 45 93% 47%;
+    --priority-high: 24 95% 53%;
+    --priority-urgent: 0 84% 60%;
+
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
