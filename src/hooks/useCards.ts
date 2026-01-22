@@ -1,0 +1,57 @@
+import { useState, useCallback } from 'react';
+import { CardData, CategoryColor } from '@/types/card';
+
+const generateId = () => Math.random().toString(36).substring(2, 9);
+
+const initialCards: CardData[] = [
+  {
+    id: generateId(),
+    title: 'Bem-vindo ao Card Manager',
+    description: 'Organize suas ideias de forma visual e intuitiva. Clique no botão + para criar seu primeiro card.',
+    category: 'blue',
+    createdAt: new Date(),
+  },
+  {
+    id: generateId(),
+    title: 'Categorize com cores',
+    description: 'Use cores diferentes para organizar seus cards por tipo ou prioridade.',
+    category: 'green',
+    createdAt: new Date(),
+  },
+  {
+    id: generateId(),
+    title: 'Design Moderno',
+    description: 'Interface limpa e minimalista para melhor foco e produtividade.',
+    category: 'purple',
+    createdAt: new Date(),
+  },
+];
+
+export const useCards = () => {
+  const [cards, setCards] = useState<CardData[]>(initialCards);
+
+  const addCard = useCallback((title: string, description: string, category: CategoryColor) => {
+    const newCard: CardData = {
+      id: generateId(),
+      title,
+      description,
+      category,
+      createdAt: new Date(),
+    };
+    setCards((prev) => [newCard, ...prev]);
+  }, []);
+
+  const updateCard = useCallback((id: string, title: string, description: string, category: CategoryColor) => {
+    setCards((prev) =>
+      prev.map((card) =>
+        card.id === id ? { ...card, title, description, category } : card
+      )
+    );
+  }, []);
+
+  const deleteCard = useCallback((id: string) => {
+    setCards((prev) => prev.filter((card) => card.id !== id));
+  }, []);
+
+  return { cards, addCard, updateCard, deleteCard };
+};
