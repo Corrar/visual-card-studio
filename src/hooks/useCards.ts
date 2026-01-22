@@ -15,6 +15,7 @@ const initialCards: CardData[] = [
       { id: generateId(), text: 'Explorar categorias', completed: true },
     ],
     createdAt: new Date(),
+    completed: false,
   },
   {
     id: generateId(),
@@ -26,6 +27,7 @@ const initialCards: CardData[] = [
       { id: generateId(), text: 'Escolher categoria favorita', completed: false },
     ],
     createdAt: new Date(),
+    completed: false,
   },
   {
     id: generateId(),
@@ -35,6 +37,7 @@ const initialCards: CardData[] = [
     priority: 'high',
     checklist: [],
     createdAt: new Date(),
+    completed: false,
   },
 ];
 
@@ -56,6 +59,7 @@ export const useCards = () => {
       priority,
       checklist,
       createdAt: new Date(),
+      completed: false,
     };
     setCards((prev) => [newCard, ...prev]);
   }, []);
@@ -94,5 +98,19 @@ export const useCards = () => {
     );
   }, []);
 
-  return { cards, addCard, updateCard, deleteCard, toggleChecklistItem };
+  const toggleCardCompleted = useCallback((cardId: string) => {
+    setCards((prev) =>
+      prev.map((card) =>
+        card.id === cardId
+          ? {
+              ...card,
+              completed: !card.completed,
+              completedAt: !card.completed ? new Date() : undefined,
+            }
+          : card
+      )
+    );
+  }, []);
+
+  return { cards, addCard, updateCard, deleteCard, toggleChecklistItem, toggleCardCompleted };
 };

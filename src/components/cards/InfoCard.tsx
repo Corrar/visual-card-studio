@@ -1,5 +1,5 @@
 import { CardData, CategoryColor, Priority } from '@/types/card';
-import { Pencil, Trash2, CheckCircle2, Circle, Flag, AlertTriangle, AlertCircle, Minus } from 'lucide-react';
+import { Pencil, Trash2, CheckCircle2, Circle, Flag, AlertTriangle, AlertCircle, Minus, Check, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface InfoCardProps {
@@ -7,6 +7,7 @@ interface InfoCardProps {
   onEdit: (card: CardData) => void;
   onDelete: (id: string) => void;
   onToggleChecklistItem: (cardId: string, itemId: string) => void;
+  onToggleCompleted: (cardId: string) => void;
   index: number;
 }
 
@@ -28,14 +29,14 @@ const categoryBgClasses: Record<CategoryColor, string> = {
   teal: 'bg-category-teal/10',
 };
 
-const priorityConfig: Record<Priority, { label: string; color: string; bgColor: string; icon: typeof Flag }> = {
-  low: { label: 'Baixa', color: 'text-priority-low', bgColor: 'bg-priority-low/10', icon: Minus },
-  medium: { label: 'Média', color: 'text-priority-medium', bgColor: 'bg-priority-medium/10', icon: Flag },
-  high: { label: 'Alta', color: 'text-priority-high', bgColor: 'bg-priority-high/10', icon: AlertTriangle },
-  urgent: { label: 'Urgente', color: 'text-priority-urgent', bgColor: 'bg-priority-urgent/10', icon: AlertCircle },
+const priorityConfig: Record<Priority, { label: string; color: string; bgColor: string; borderColor: string; icon: typeof Flag }> = {
+  low: { label: 'Baixa', color: 'text-priority-low', bgColor: 'bg-priority-low/10', borderColor: 'border-priority-low/30', icon: Minus },
+  medium: { label: 'Média', color: 'text-priority-medium', bgColor: 'bg-priority-medium/10', borderColor: 'border-priority-medium/30', icon: Flag },
+  high: { label: 'Alta', color: 'text-priority-high', bgColor: 'bg-priority-high/10', borderColor: 'border-priority-high/30', icon: AlertTriangle },
+  urgent: { label: 'Urgente', color: 'text-priority-urgent', bgColor: 'bg-priority-urgent/10', borderColor: 'border-priority-urgent/30', icon: AlertCircle },
 };
 
-export const InfoCard = ({ card, onEdit, onDelete, onToggleChecklistItem, index }: InfoCardProps) => {
+export const InfoCard = ({ card, onEdit, onDelete, onToggleChecklistItem, onToggleCompleted, index }: InfoCardProps) => {
   const priority = priorityConfig[card.priority];
   const PriorityIcon = priority.icon;
   const completedCount = card.checklist.filter(item => item.completed).length;
@@ -45,14 +46,17 @@ export const InfoCard = ({ card, onEdit, onDelete, onToggleChecklistItem, index 
   return (
     <article
       className={cn(
-        'group relative bg-card rounded-2xl p-5 card-shadow transition-all duration-300',
+        'group relative rounded-2xl p-5 card-shadow transition-all duration-300',
         'hover:card-shadow-hover hover:-translate-y-1',
-        'animate-slide-up overflow-hidden',
-        'focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2'
+        'animate-slide-up overflow-hidden border-2',
+        'focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2',
+        priority.borderColor,
+        priority.bgColor,
+        card.completed && 'opacity-75'
       )}
       style={{ animationDelay: `${index * 50}ms` }}
       role="article"
-      aria-label={`Card: ${card.title}, Prioridade: ${priority.label}`}
+      aria-label={`Card: ${card.title}, Prioridade: ${priority.label}${card.completed ? ', Concluído' : ''}`}
       tabIndex={0}
     >
       {/* Category indicator */}
@@ -93,6 +97,21 @@ export const InfoCard = ({ card, onEdit, onDelete, onToggleChecklistItem, index 
             role="group"
             aria-label="Ações do card"
           >
+            <button
+              onClick={() => onToggleCompleted(card.id)}
+              className={cn(
+                'p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+                card.completed ? 'hover:bg-secondary bg-secondary/50' : 'hover:bg-primary/10'
+              )}
+              aria-label={card.completed ? `Reabrir ${card.title}` : `Marcar ${card.title} como pronto`}
+              title={card.completed ? 'Reabrir card' : 'Marcar como pronto'}
+            >
+              {card.completed ? (
+                <RotateCcw className="w-4 h-4 text-muted-foreground" />
+              ) : (
+                <Check className="w-4 h-4 text-primary" />
+              )}
+            </button>
             <button
               onClick={() => onEdit(card)}
               className="p-2 rounded-lg hover:bg-secondary transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
