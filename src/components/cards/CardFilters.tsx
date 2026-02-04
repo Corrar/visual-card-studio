@@ -1,4 +1,4 @@
-import { CategoryColor, Priority } from '@/types/card';
+import { Priority } from '@/types/card';
 import { Filter, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -9,22 +9,13 @@ import {
 } from '@/components/ui/popover';
 
 interface CardFiltersProps {
-  categoryFilter: CategoryColor | 'all';
   priorityFilter: Priority | 'all';
-  onCategoryChange: (category: CategoryColor | 'all') => void;
+  tagFilter: string;
+  availableTags: string[];
   onPriorityChange: (priority: Priority | 'all') => void;
+  onTagChange: (tag: string) => void;
   onClearFilters: () => void;
 }
-
-const categories: { value: CategoryColor | 'all'; label: string; color?: string }[] = [
-  { value: 'all', label: 'Todas' },
-  { value: 'blue', label: 'Azul', color: 'bg-category-blue' },
-  { value: 'green', label: 'Verde', color: 'bg-category-green' },
-  { value: 'orange', label: 'Laranja', color: 'bg-category-orange' },
-  { value: 'pink', label: 'Rosa', color: 'bg-category-pink' },
-  { value: 'purple', label: 'Roxo', color: 'bg-category-purple' },
-  { value: 'teal', label: 'Turquesa', color: 'bg-category-teal' },
-];
 
 const priorities: { value: Priority | 'all'; label: string; color?: string }[] = [
   { value: 'all', label: 'Todas' },
@@ -35,14 +26,15 @@ const priorities: { value: Priority | 'all'; label: string; color?: string }[] =
 ];
 
 export const CardFilters = ({
-  categoryFilter,
   priorityFilter,
-  onCategoryChange,
+  tagFilter,
+  availableTags,
   onPriorityChange,
+  onTagChange,
   onClearFilters,
 }: CardFiltersProps) => {
-  const hasFilters = categoryFilter !== 'all' || priorityFilter !== 'all';
-  const activeFiltersCount = (categoryFilter !== 'all' ? 1 : 0) + (priorityFilter !== 'all' ? 1 : 0);
+  const hasFilters = priorityFilter !== 'all' || tagFilter !== '';
+  const activeFiltersCount = (priorityFilter !== 'all' ? 1 : 0) + (tagFilter !== '' ? 1 : 0);
 
   return (
     <div className="flex items-center gap-2">
@@ -67,31 +59,6 @@ export const CardFilters = ({
         </PopoverTrigger>
         <PopoverContent className="w-72 p-4 animate-slide-down" align="start">
           <div className="space-y-4">
-            {/* Category Filter */}
-            <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-foreground">Categoria</h4>
-              <div className="flex flex-wrap gap-1.5">
-                {categories.map((cat) => (
-                  <button
-                    key={cat.value}
-                    onClick={() => onCategoryChange(cat.value)}
-                    className={cn(
-                      'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200',
-                      'hover:scale-105 active:scale-95',
-                      categoryFilter === cat.value
-                        ? 'bg-primary text-primary-foreground shadow-sm'
-                        : 'bg-secondary hover:bg-accent text-secondary-foreground'
-                    )}
-                  >
-                    {cat.color && (
-                      <span className={cn('w-2 h-2 rounded-full', cat.color)} />
-                    )}
-                    {cat.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             {/* Priority Filter */}
             <div className="space-y-2">
               <h4 className="text-sm font-semibold text-foreground">Prioridade</h4>
@@ -117,6 +84,42 @@ export const CardFilters = ({
               </div>
             </div>
 
+            {/* Tag Filter */}
+            {availableTags.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-semibold text-foreground">Tags</h4>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    onClick={() => onTagChange('')}
+                    className={cn(
+                      'px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200',
+                      'hover:scale-105 active:scale-95',
+                      tagFilter === ''
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'bg-secondary hover:bg-accent text-secondary-foreground'
+                    )}
+                  >
+                    Todas
+                  </button>
+                  {availableTags.map((tag) => (
+                    <button
+                      key={tag}
+                      onClick={() => onTagChange(tag)}
+                      className={cn(
+                        'px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200',
+                        'hover:scale-105 active:scale-95',
+                        tagFilter === tag
+                          ? 'bg-primary text-primary-foreground shadow-sm'
+                          : 'bg-secondary hover:bg-accent text-secondary-foreground'
+                      )}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Clear Filters */}
             {hasFilters && (
               <Button
@@ -136,19 +139,6 @@ export const CardFilters = ({
       {/* Active filter badges */}
       {hasFilters && (
         <div className="flex items-center gap-1.5 animate-slide-left">
-          {categoryFilter !== 'all' && (
-            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-secondary text-xs font-medium">
-              <span className={cn('w-2 h-2 rounded-full', categories.find(c => c.value === categoryFilter)?.color)} />
-              {categories.find(c => c.value === categoryFilter)?.label}
-              <button
-                onClick={() => onCategoryChange('all')}
-                className="ml-0.5 hover:text-destructive transition-colors"
-                aria-label="Remover filtro de categoria"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </span>
-          )}
           {priorityFilter !== 'all' && (
             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-secondary text-xs font-medium">
               <span className={cn('w-2 h-2 rounded-full', priorities.find(p => p.value === priorityFilter)?.color)} />
@@ -157,6 +147,18 @@ export const CardFilters = ({
                 onClick={() => onPriorityChange('all')}
                 className="ml-0.5 hover:text-destructive transition-colors"
                 aria-label="Remover filtro de prioridade"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+          {tagFilter !== '' && (
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-secondary text-xs font-medium">
+              {tagFilter}
+              <button
+                onClick={() => onTagChange('')}
+                className="ml-0.5 hover:text-destructive transition-colors"
+                aria-label="Remover filtro de tag"
               >
                 <X className="w-3 h-3" />
               </button>

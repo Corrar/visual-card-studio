@@ -1,18 +1,20 @@
 import { useState, useCallback } from 'react';
-import { CardData, CategoryColor, Priority, ChecklistItem } from '@/types/card';
+import { CardData, Priority, ChecklistItem, Tag } from '@/types/card';
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
 const initialCards: CardData[] = [
   {
     id: generateId(),
-    title: 'Bem-vindo ao Card Manager',
+    title: 'Bem-vindo ao TaskFlow',
     description: 'Organize suas ideias de forma visual e intuitiva. Clique no botão + para criar seu primeiro card.',
-    category: 'blue',
     priority: 'medium',
     checklist: [
       { id: generateId(), text: 'Criar primeiro card', completed: false },
-      { id: generateId(), text: 'Explorar categorias', completed: true },
+      { id: generateId(), text: 'Explorar funcionalidades', completed: true },
+    ],
+    tags: [
+      { id: generateId(), name: 'Início', color: 'bg-blue-500' },
     ],
     imageUrl: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=400&h=200&fit=crop',
     createdAt: new Date(),
@@ -20,12 +22,15 @@ const initialCards: CardData[] = [
   },
   {
     id: generateId(),
-    title: 'Categorize com cores',
-    description: 'Use cores diferentes para organizar seus cards por tipo ou prioridade.',
-    category: 'green',
+    title: 'Adicione tags para organizar',
+    description: 'Use tags coloridas para categorizar e filtrar seus cards de forma eficiente.',
     priority: 'low',
     checklist: [
-      { id: generateId(), text: 'Escolher categoria favorita', completed: false },
+      { id: generateId(), text: 'Criar tags personalizadas', completed: false },
+    ],
+    tags: [
+      { id: generateId(), name: 'Dica', color: 'bg-emerald-500' },
+      { id: generateId(), name: 'Produtividade', color: 'bg-violet-500' },
     ],
     imageUrl: 'https://images.unsplash.com/photo-1557683316-973673baf926?w=400&h=200&fit=crop',
     createdAt: new Date(),
@@ -34,12 +39,14 @@ const initialCards: CardData[] = [
   {
     id: generateId(),
     title: 'Tarefa Urgente!',
-    description: 'Este é um exemplo de card com prioridade urgente. Note a cor destacada.',
-    category: 'pink',
+    description: 'Este é um exemplo de card com prioridade urgente. Note o destaque visual.',
     priority: 'urgent',
     checklist: [
       { id: generateId(), text: 'Resolver imediatamente', completed: false },
       { id: generateId(), text: 'Notificar equipe', completed: false },
+    ],
+    tags: [
+      { id: generateId(), name: 'Importante', color: 'bg-red-500' },
     ],
     createdAt: new Date(),
     completed: false,
@@ -48,9 +55,11 @@ const initialCards: CardData[] = [
     id: generateId(),
     title: 'Design Moderno',
     description: 'Interface limpa e minimalista para melhor foco e produtividade.',
-    category: 'purple',
     priority: 'high',
     checklist: [],
+    tags: [
+      { id: generateId(), name: 'UI/UX', color: 'bg-pink-500' },
+    ],
     createdAt: new Date(),
     completed: false,
   },
@@ -62,9 +71,9 @@ export const useCards = () => {
   const addCard = useCallback((
     title: string,
     description: string,
-    category: CategoryColor,
     priority: Priority,
     checklist: ChecklistItem[],
+    tags: Tag[],
     imageUrl?: string,
     dueDate?: Date
   ) => {
@@ -72,9 +81,9 @@ export const useCards = () => {
       id: generateId(),
       title,
       description,
-      category,
       priority,
       checklist,
+      tags,
       imageUrl,
       dueDate,
       createdAt: new Date(),
@@ -87,15 +96,15 @@ export const useCards = () => {
     id: string,
     title: string,
     description: string,
-    category: CategoryColor,
     priority: Priority,
     checklist: ChecklistItem[],
+    tags: Tag[],
     imageUrl?: string,
     dueDate?: Date
   ) => {
     setCards((prev) =>
       prev.map((card) =>
-        card.id === id ? { ...card, title, description, category, priority, checklist, imageUrl, dueDate } : card
+        card.id === id ? { ...card, title, description, priority, checklist, tags, imageUrl, dueDate } : card
       )
     );
   }, []);
@@ -117,6 +126,10 @@ export const useCards = () => {
           ...item,
           id: generateId(),
           completed: false,
+        })),
+        tags: cardToDuplicate.tags.map(tag => ({
+          ...tag,
+          id: generateId(),
         })),
         createdAt: new Date(),
         completed: false,
@@ -168,6 +181,10 @@ export const useCards = () => {
     });
   }, []);
 
+  const archiveCard = useCallback((id: string) => {
+    setCards((prev) => prev.filter((card) => card.id !== id));
+  }, []);
+
   return { 
     cards, 
     addCard, 
@@ -177,5 +194,6 @@ export const useCards = () => {
     toggleChecklistItem, 
     toggleCardCompleted,
     reorderCards,
+    archiveCard,
   };
 };

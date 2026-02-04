@@ -1,24 +1,34 @@
 import { useState, useMemo } from 'react';
-import { Plus, Sparkles, ListTodo, CheckCircle, Search } from 'lucide-react';
+import { Plus, Sparkles, ListTodo, CheckCircle, Search, LayoutGrid } from 'lucide-react';
 import { useCards } from '@/hooks/useCards';
 import { InfoCard } from '@/components/cards/InfoCard';
 import { CardModal } from '@/components/cards/CardModal';
 import { CardFilters } from '@/components/cards/CardFilters';
 import { EmptyState } from '@/components/cards/EmptyState';
-import { CardData, CategoryColor, Priority, ChecklistItem } from '@/types/card';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { CardData, Priority, ChecklistItem, Tag } from '@/types/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
 const Index = () => {
-  const { cards, addCard, updateCard, deleteCard, duplicateCard, toggleChecklistItem, toggleCardCompleted } = useCards();
+  const { cards, addCard, updateCard, deleteCard, duplicateCard, toggleChecklistItem, toggleCardCompleted, archiveCard } = useCards();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<CardData | null>(null);
   const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<CategoryColor | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<Priority | 'all'>('all');
+  const [tagFilter, setTagFilter] = useState<string>('');
+
+  // Get all unique tags from cards
+  const availableTags = useMemo(() => {
+    const tagsSet = new Set<string>();
+    cards.forEach(card => {
+      card.tags.forEach(tag => tagsSet.add(tag.name));
+    });
+    return Array.from(tagsSet);
+  }, [cards]);
 
   // Filter logic
   const filteredCards = useMemo(() => {
@@ -28,15 +38,15 @@ const Index = () => {
         card.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         card.description.toLowerCase().includes(searchQuery.toLowerCase());
       
-      // Category filter
-      const matchesCategory = categoryFilter === 'all' || card.category === categoryFilter;
-      
       // Priority filter
       const matchesPriority = priorityFilter === 'all' || card.priority === priorityFilter;
       
-      return matchesSearch && matchesCategory && matchesPriority;
+      // Tag filter
+      const matchesTag = tagFilter === '' || card.tags.some(tag => tag.name === tagFilter);
+      
+      return matchesSearch && matchesPriority && matchesTag;
     });
-  }, [cards, searchQuery, categoryFilter, priorityFilter]);
+  }, [cards, searchQuery, priorityFilter, tagFilter]);
 
   const activeCards = useMemo(() => filteredCards.filter(card => !card.completed), [filteredCards]);
   const completedCards = useMemo(() => filteredCards.filter(card => card.completed), [filteredCards]);
@@ -54,29 +64,29 @@ const Index = () => {
   const handleSave = (
     title: string,
     description: string,
-    category: CategoryColor,
     priority: Priority,
     checklist: ChecklistItem[],
+    tags: Tag[],
     imageUrl?: string,
     dueDate?: Date
   ) => {
     if (editingCard) {
-      updateCard(editingCard.id, title, description, category, priority, checklist, imageUrl, dueDate);
+      updateCard(editingCard.id, title, description, priority, checklist, tags, imageUrl, dueDate);
     } else {
-      addCard(title, description, category, priority, checklist, imageUrl, dueDate);
+      addCard(title, description, priority, checklist, tags, imageUrl, dueDate);
     }
   };
 
   const handleClearFilters = () => {
-    setCategoryFilter('all');
     setPriorityFilter('all');
+    setTagFilter('');
     setSearchQuery('');
   };
 
   const renderCards = (cardList: CardData[]) => (
     cardList.length === 0 ? (
       activeTab === 'active' ? (
-        searchQuery || categoryFilter !== 'all' || priorityFilter !== 'all' ? (
+        searchQuery || priorityFilter !== 'all' || tagFilter !== '' ? (
           <div className="flex flex-col items-center justify-center py-16 text-center animate-fade-in">
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
               <Search className="w-8 h-8 text-muted-foreground" />
@@ -118,6 +128,7 @@ const Index = () => {
             onDuplicate={duplicateCard}
             onToggleChecklistItem={toggleChecklistItem}
             onToggleCompleted={toggleCardCompleted}
+            onArchive={archiveCard}
             index={index}
           />
         ))}
@@ -126,7 +137,7 @@ const Index = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background transition-colors duration-300">
       {/* Skip link for accessibility */}
       <a 
         href="#main-content" 
@@ -143,25 +154,28 @@ const Index = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 pulse-glow">
-                  <Sparkles className="w-5 h-5 text-primary-foreground" aria-hidden="true" />
+                  <LayoutGrid className="w-5 h-5 text-primary-foreground" aria-hidden="true" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-foreground">Card Manager</h1>
+                  <h1 className="text-xl font-bold text-foreground">TaskFlow</h1>
                   <p className="text-sm text-muted-foreground" aria-live="polite">
                     {activeCards.length} {activeCards.length === 1 ? 'ativo' : 'ativos'} · {completedCards.length} {completedCards.length === 1 ? 'concluído' : 'concluídos'}
                   </p>
                 </div>
               </div>
 
-              <Button 
-                onClick={handleOpenCreate} 
-                size="lg" 
-                className="gap-2 shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-transform"
-              >
-                <Plus className="w-5 h-5" aria-hidden="true" />
-                <span className="hidden sm:inline">Novo Card</span>
-                <span className="sr-only sm:hidden">Criar novo card</span>
-              </Button>
+              <div className="flex items-center gap-2">
+                <ThemeToggle />
+                <Button 
+                  onClick={handleOpenCreate} 
+                  size="lg" 
+                  className="gap-2 shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-transform"
+                >
+                  <Plus className="w-5 h-5" aria-hidden="true" />
+                  <span className="hidden sm:inline">Novo Card</span>
+                  <span className="sr-only sm:hidden">Criar novo card</span>
+                </Button>
+              </div>
             </div>
 
             {/* Search and Filters row */}
@@ -181,10 +195,11 @@ const Index = () => {
 
               {/* Filters */}
               <CardFilters
-                categoryFilter={categoryFilter}
                 priorityFilter={priorityFilter}
-                onCategoryChange={setCategoryFilter}
+                tagFilter={tagFilter}
+                availableTags={availableTags}
                 onPriorityChange={setPriorityFilter}
+                onTagChange={setTagFilter}
                 onClearFilters={handleClearFilters}
               />
             </div>
@@ -221,7 +236,7 @@ const Index = () => {
               <CheckCircle className="w-4 h-4" />
               Concluídos
               {completedCards.length > 0 && (
-                <span className="ml-1 px-2 py-0.5 rounded-full bg-category-green/10 text-category-green text-xs font-semibold">
+                <span className="ml-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
                   {completedCards.length}
                 </span>
               )}

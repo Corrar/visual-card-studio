@@ -1,5 +1,5 @@
-import { CardData, CategoryColor, Priority } from '@/types/card';
-import { Pencil, Trash2, CheckCircle2, Circle, Flag, AlertTriangle, AlertCircle, Minus, Check, RotateCcw, Copy, Calendar, ImageIcon } from 'lucide-react';
+import { CardData, Priority } from '@/types/card';
+import { Pencil, Trash2, CheckCircle2, Circle, Flag, AlertTriangle, AlertCircle, Minus, Check, RotateCcw, Copy, Calendar, Archive } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -11,44 +11,18 @@ interface InfoCardProps {
   onDuplicate: (id: string) => void;
   onToggleChecklistItem: (cardId: string, itemId: string) => void;
   onToggleCompleted: (cardId: string) => void;
+  onArchive?: (id: string) => void;
   index: number;
 }
 
-const categoryColorClasses: Record<CategoryColor, string> = {
-  blue: 'bg-category-blue',
-  green: 'bg-category-green',
-  orange: 'bg-category-orange',
-  pink: 'bg-category-pink',
-  purple: 'bg-category-purple',
-  teal: 'bg-category-teal',
+const priorityConfig: Record<Priority, { label: string; color: string; bgColor: string; glowClass: string; icon: typeof Flag }> = {
+  low: { label: 'Baixa', color: 'text-priority-low', bgColor: 'bg-priority-low', glowClass: 'priority-glow-low', icon: Minus },
+  medium: { label: 'Média', color: 'text-priority-medium', bgColor: 'bg-priority-medium', glowClass: 'priority-glow-medium', icon: Flag },
+  high: { label: 'Alta', color: 'text-priority-high', bgColor: 'bg-priority-high', glowClass: 'priority-glow-high', icon: AlertTriangle },
+  urgent: { label: 'Urgente', color: 'text-priority-urgent', bgColor: 'bg-priority-urgent', glowClass: 'priority-glow-urgent', icon: AlertCircle },
 };
 
-const categoryGradients: Record<CategoryColor, string> = {
-  blue: 'from-category-blue/20 to-category-blue/5',
-  green: 'from-category-green/20 to-category-green/5',
-  orange: 'from-category-orange/20 to-category-orange/5',
-  pink: 'from-category-pink/20 to-category-pink/5',
-  purple: 'from-category-purple/20 to-category-purple/5',
-  teal: 'from-category-teal/20 to-category-teal/5',
-};
-
-const categoryBorderClasses: Record<CategoryColor, string> = {
-  blue: 'border-category-blue/30 hover:border-category-blue/50',
-  green: 'border-category-green/30 hover:border-category-green/50',
-  orange: 'border-category-orange/30 hover:border-category-orange/50',
-  pink: 'border-category-pink/30 hover:border-category-pink/50',
-  purple: 'border-category-purple/30 hover:border-category-purple/50',
-  teal: 'border-category-teal/30 hover:border-category-teal/50',
-};
-
-const priorityConfig: Record<Priority, { label: string; color: string; bgColor: string; icon: typeof Flag }> = {
-  low: { label: 'Baixa', color: 'text-priority-low', bgColor: 'bg-priority-low', icon: Minus },
-  medium: { label: 'Média', color: 'text-priority-medium', bgColor: 'bg-priority-medium', icon: Flag },
-  high: { label: 'Alta', color: 'text-priority-high', bgColor: 'bg-priority-high', icon: AlertTriangle },
-  urgent: { label: 'Urgente', color: 'text-priority-urgent', bgColor: 'bg-priority-urgent', icon: AlertCircle },
-};
-
-export const InfoCard = ({ card, onEdit, onDelete, onDuplicate, onToggleChecklistItem, onToggleCompleted, index }: InfoCardProps) => {
+export const InfoCard = ({ card, onEdit, onDelete, onDuplicate, onToggleChecklistItem, onToggleCompleted, onArchive, index }: InfoCardProps) => {
   const priority = priorityConfig[card.priority];
   const PriorityIcon = priority.icon;
   const completedCount = card.checklist.filter(item => item.completed).length;
@@ -58,12 +32,11 @@ export const InfoCard = ({ card, onEdit, onDelete, onDuplicate, onToggleChecklis
   return (
     <article
       className={cn(
-        'group relative rounded-2xl overflow-hidden border-2 transition-all duration-500 ease-out',
-        'bg-gradient-to-br',
-        categoryGradients[card.category],
-        categoryBorderClasses[card.category],
+        'group relative rounded-2xl overflow-hidden border transition-all duration-500 ease-out',
+        'bg-card',
         'hover-lift card-shadow hover:card-shadow-hover',
         'focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2',
+        priority.glowClass,
         card.completed && 'opacity-60 grayscale-[30%]'
       )}
       style={{ 
@@ -73,11 +46,11 @@ export const InfoCard = ({ card, onEdit, onDelete, onDuplicate, onToggleChecklis
       aria-label={`Card: ${card.title}, Prioridade: ${priority.label}${card.completed ? ', Concluído' : ''}`}
       tabIndex={0}
     >
-      {/* Category indicator - vertical bar */}
+      {/* Priority indicator - vertical bar */}
       <div
         className={cn(
-          'absolute left-0 top-0 w-1.5 h-full rounded-l-2xl',
-          categoryColorClasses[card.category]
+          'absolute left-0 top-0 w-1 h-full',
+          priority.bgColor
         )}
         aria-hidden="true"
       />
@@ -93,21 +66,21 @@ export const InfoCard = ({ card, onEdit, onDelete, onDuplicate, onToggleChecklis
               e.currentTarget.style.display = 'none';
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
         </div>
       )}
 
       {/* Content */}
-      <div className="p-5 pl-6">
+      <div className="p-5 pl-5">
         {/* Header with priority and actions */}
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex-1 min-w-0">
-            {/* Priority badge with animation */}
-            <div className="flex items-center gap-2 mb-2">
+            {/* Priority badge and due date */}
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
               <span
                 className={cn(
                   'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wide',
-                  'bg-card/80 backdrop-blur-sm border shadow-sm',
+                  'bg-card border shadow-sm',
                   priority.color,
                   card.priority === 'urgent' && 'animate-pulse-scale'
                 )}
@@ -119,7 +92,7 @@ export const InfoCard = ({ card, onEdit, onDelete, onDuplicate, onToggleChecklis
               </span>
               
               {card.dueDate && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs bg-muted text-muted-foreground">
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs bg-muted text-muted-foreground">
                   <Calendar className="w-3 h-3" />
                   {format(card.dueDate, 'dd MMM', { locale: ptBR })}
                 </span>
@@ -178,6 +151,16 @@ export const InfoCard = ({ card, onEdit, onDelete, onDuplicate, onToggleChecklis
             >
               <Pencil className="w-4 h-4 text-muted-foreground" />
             </button>
+            {onArchive && (
+              <button
+                onClick={() => onArchive(card.id)}
+                className="p-2 rounded-lg hover:bg-amber-500/10 hover:scale-110 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+                aria-label={`Arquivar ${card.title}`}
+                title="Arquivar card"
+              >
+                <Archive className="w-4 h-4 text-muted-foreground hover:text-amber-600" />
+              </button>
+            )}
             <button
               onClick={() => onDelete(card.id)}
               className="p-2 rounded-lg hover:bg-destructive/10 hover:scale-110 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-destructive focus:ring-offset-1"
@@ -195,13 +178,30 @@ export const InfoCard = ({ card, onEdit, onDelete, onDuplicate, onToggleChecklis
           </p>
         )}
 
+        {/* Tags */}
+        {card.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-4">
+            {card.tags.map((tag) => (
+              <span
+                key={tag.id}
+                className={cn(
+                  'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium text-white',
+                  tag.color
+                )}
+              >
+                {tag.name}
+              </span>
+            ))}
+          </div>
+        )}
+
         {/* Checklist section with enhanced visuals */}
         {card.checklist.length > 0 && (
-          <div className="mb-4 space-y-2">
+          <div className="space-y-2">
             {/* Progress bar with shine effect */}
             <div className="flex items-center gap-2 mb-2">
               <div 
-                className="flex-1 h-2 bg-muted/50 rounded-full overflow-hidden"
+                className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden"
                 role="progressbar"
                 aria-valuenow={completedCount}
                 aria-valuemin={0}
@@ -211,7 +211,7 @@ export const InfoCard = ({ card, onEdit, onDelete, onDuplicate, onToggleChecklis
                 <div 
                   className={cn(
                     'h-full rounded-full transition-all duration-500 ease-out progress-fill',
-                    categoryColorClasses[card.category]
+                    priority.bgColor
                   )}
                   style={{ width: `${progressPercentage}%` }}
                 />
@@ -229,7 +229,7 @@ export const InfoCard = ({ card, onEdit, onDelete, onDuplicate, onToggleChecklis
                     onClick={() => onToggleChecklistItem(card.id, item.id)}
                     className={cn(
                       'w-full flex items-start gap-2.5 p-2 rounded-lg text-left transition-all duration-300',
-                      'hover:bg-card/50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1',
+                      'hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1',
                       'active:scale-[0.98]',
                       item.completed && 'opacity-50'
                     )}
@@ -241,7 +241,7 @@ export const InfoCard = ({ card, onEdit, onDelete, onDuplicate, onToggleChecklis
                       item.completed ? 'scale-110' : 'scale-100'
                     )}>
                       {item.completed ? (
-                        <CheckCircle2 className={cn('w-4 h-4', categoryColorClasses[card.category].replace('bg-', 'text-'))} aria-hidden="true" />
+                        <CheckCircle2 className={cn('w-4 h-4', priority.color)} aria-hidden="true" />
                       ) : (
                         <Circle className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
                       )}
@@ -265,26 +265,6 @@ export const InfoCard = ({ card, onEdit, onDelete, onDuplicate, onToggleChecklis
             </ul>
           </div>
         )}
-
-        {/* Footer with category badge */}
-        <div className="flex items-center justify-between pt-3 border-t border-border/30">
-          <span
-            className={cn(
-              'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold capitalize',
-              'bg-card/60 backdrop-blur-sm border shadow-sm'
-            )}
-          >
-            <span className={cn('w-2.5 h-2.5 rounded-full mr-1.5', categoryColorClasses[card.category])} />
-            {card.category}
-          </span>
-          
-          {!card.imageUrl && (
-            <span className="text-xs text-muted-foreground/50 flex items-center gap-1">
-              <ImageIcon className="w-3 h-3" />
-              Sem imagem
-            </span>
-          )}
-        </div>
       </div>
     </article>
   );
