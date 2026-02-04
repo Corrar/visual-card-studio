@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { CardData, CategoryColor, Priority, ChecklistItem } from '@/types/card';
-import { Plus, X, GripVertical, Image, Link, Calendar } from 'lucide-react';
+import { CardData, Priority, ChecklistItem, Tag } from '@/types/card';
+import { Plus, X, GripVertical, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -17,6 +17,8 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { ImageUpload } from './ImageUpload';
+import { TagInput } from './TagInput';
 
 interface CardModalProps {
   isOpen: boolean;
@@ -24,23 +26,14 @@ interface CardModalProps {
   onSave: (
     title: string,
     description: string,
-    category: CategoryColor,
     priority: Priority,
     checklist: ChecklistItem[],
+    tags: Tag[],
     imageUrl?: string,
     dueDate?: Date
   ) => void;
   editingCard?: CardData | null;
 }
-
-const categories: { value: CategoryColor; label: string; color: string }[] = [
-  { value: 'blue', label: 'Azul', color: 'bg-category-blue' },
-  { value: 'green', label: 'Verde', color: 'bg-category-green' },
-  { value: 'orange', label: 'Laranja', color: 'bg-category-orange' },
-  { value: 'pink', label: 'Rosa', color: 'bg-category-pink' },
-  { value: 'purple', label: 'Roxo', color: 'bg-category-purple' },
-  { value: 'teal', label: 'Turquesa', color: 'bg-category-teal' },
-];
 
 const priorities: { value: Priority; label: string; color: string; bgColor: string }[] = [
   { value: 'low', label: 'Baixa', color: 'text-priority-low', bgColor: 'bg-priority-low' },
@@ -54,33 +47,30 @@ const generateId = () => Math.random().toString(36).substring(2, 9);
 export const CardModal = ({ isOpen, onClose, onSave, editingCard }: CardModalProps) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState<CategoryColor>('blue');
   const [priority, setPriority] = useState<Priority>('medium');
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [newItemText, setNewItemText] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
+  const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
-  const [showImageInput, setShowImageInput] = useState(false);
+  const [tags, setTags] = useState<Tag[]>([]);
 
   useEffect(() => {
     if (editingCard) {
       setTitle(editingCard.title);
       setDescription(editingCard.description);
-      setCategory(editingCard.category);
       setPriority(editingCard.priority);
       setChecklist(editingCard.checklist);
-      setImageUrl(editingCard.imageUrl || '');
+      setImageUrl(editingCard.imageUrl);
       setDueDate(editingCard.dueDate);
-      setShowImageInput(!!editingCard.imageUrl);
+      setTags(editingCard.tags || []);
     } else {
       setTitle('');
       setDescription('');
-      setCategory('blue');
       setPriority('medium');
       setChecklist([]);
-      setImageUrl('');
+      setImageUrl(undefined);
       setDueDate(undefined);
-      setShowImageInput(false);
+      setTags([]);
     }
     setNewItemText('');
   }, [editingCard, isOpen]);
@@ -91,10 +81,10 @@ export const CardModal = ({ isOpen, onClose, onSave, editingCard }: CardModalPro
       onSave(
         title.trim(), 
         description.trim(), 
-        category, 
         priority, 
         checklist, 
-        imageUrl.trim() || undefined,
+        tags,
+        imageUrl,
         dueDate
       );
       onClose();
@@ -166,47 +156,16 @@ export const CardModal = ({ isOpen, onClose, onSave, editingCard }: CardModalPro
             />
           </div>
 
-          {/* Image URL */}
+          {/* Image Upload */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Imagem</Label>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowImageInput(!showImageInput)}
-                className="h-7 text-xs gap-1"
-              >
-                <Image className="w-3.5 h-3.5" />
-                {showImageInput ? 'Remover' : 'Adicionar'}
-              </Button>
-            </div>
-            
-            {showImageInput && (
-              <div className="space-y-2 animate-slide-down">
-                <div className="relative">
-                  <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    placeholder="Cole a URL da imagem aqui..."
-                    className="pl-10"
-                  />
-                </div>
-                {imageUrl && (
-                  <div className="relative rounded-lg overflow-hidden h-32 bg-muted animate-fade-in">
-                    <img 
-                      src={imageUrl} 
-                      alt="Preview" 
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><text x="50%" y="50%" font-family="sans-serif" font-size="12" text-anchor="middle" dy=".3em" fill="%23999">Imagem inválida</text></svg>';
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
+            <Label>Imagem</Label>
+            <ImageUpload value={imageUrl} onChange={setImageUrl} />
+          </div>
+
+          {/* Tags */}
+          <div className="space-y-2">
+            <Label>Tags</Label>
+            <TagInput tags={tags} onChange={setTags} />
           </div>
 
           {/* Due Date */}
@@ -274,36 +233,6 @@ export const CardModal = ({ isOpen, onClose, onSave, editingCard }: CardModalPro
                 >
                   <span className={cn('w-3 h-3 rounded-full transition-transform', p.bgColor, priority === p.value && 'scale-125')} />
                   <span className="text-sm font-medium">{p.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Category */}
-          <div className="space-y-2">
-            <Label id="category-label">Categoria</Label>
-            <div 
-              className="flex flex-wrap gap-2" 
-              role="radiogroup" 
-              aria-labelledby="category-label"
-            >
-              {categories.map((cat) => (
-                <button
-                  key={cat.value}
-                  type="button"
-                  onClick={() => setCategory(cat.value)}
-                  className={cn(
-                    'flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-all duration-300',
-                    'hover:scale-105 active:scale-95',
-                    category === cat.value
-                      ? 'border-primary bg-primary/5 shadow-sm'
-                      : 'border-transparent bg-secondary hover:bg-accent'
-                  )}
-                  role="radio"
-                  aria-checked={category === cat.value}
-                >
-                  <span className={cn('w-3 h-3 rounded-full transition-transform', cat.color, category === cat.value && 'scale-125')} />
-                  <span className="text-sm font-medium">{cat.label}</span>
                 </button>
               ))}
             </div>

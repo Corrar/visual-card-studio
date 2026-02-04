@@ -1,5 +1,3 @@
-export type CategoryColor = 'blue' | 'green' | 'orange' | 'pink' | 'purple' | 'teal';
-
 export type Priority = 'low' | 'medium' | 'high' | 'urgent';
 
 export interface ChecklistItem {
@@ -8,13 +6,19 @@ export interface ChecklistItem {
   completed: boolean;
 }
 
+export interface Tag {
+  id: string;
+  name: string;
+  color: string;
+}
+
 export interface CardData {
   id: string;
   title: string;
   description: string;
-  category: CategoryColor;
   priority: Priority;
   checklist: ChecklistItem[];
+  tags: Tag[];
   imageUrl?: string;
   dueDate?: Date;
   createdAt: Date;
@@ -22,5 +26,4 @@ export interface CardData {
   completedAt?: Date;
 }
 
-export type FilterType = 'all' | CategoryColor;
 export type PriorityFilter = 'all' | Priority;
