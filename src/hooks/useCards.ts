@@ -14,6 +14,7 @@ const initialCards: CardData[] = [
       { id: generateId(), text: 'Criar primeiro card', completed: false },
       { id: generateId(), text: 'Explorar categorias', completed: true },
     ],
+    imageUrl: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=400&h=200&fit=crop',
     createdAt: new Date(),
     completed: false,
   },
@@ -25,6 +26,20 @@ const initialCards: CardData[] = [
     priority: 'low',
     checklist: [
       { id: generateId(), text: 'Escolher categoria favorita', completed: false },
+    ],
+    imageUrl: 'https://images.unsplash.com/photo-1557683316-973673baf926?w=400&h=200&fit=crop',
+    createdAt: new Date(),
+    completed: false,
+  },
+  {
+    id: generateId(),
+    title: 'Tarefa Urgente!',
+    description: 'Este é um exemplo de card com prioridade urgente. Note a cor destacada.',
+    category: 'pink',
+    priority: 'urgent',
+    checklist: [
+      { id: generateId(), text: 'Resolver imediatamente', completed: false },
+      { id: generateId(), text: 'Notificar equipe', completed: false },
     ],
     createdAt: new Date(),
     completed: false,
@@ -49,7 +64,9 @@ export const useCards = () => {
     description: string,
     category: CategoryColor,
     priority: Priority,
-    checklist: ChecklistItem[]
+    checklist: ChecklistItem[],
+    imageUrl?: string,
+    dueDate?: Date
   ) => {
     const newCard: CardData = {
       id: generateId(),
@@ -58,6 +75,8 @@ export const useCards = () => {
       category,
       priority,
       checklist,
+      imageUrl,
+      dueDate,
       createdAt: new Date(),
       completed: false,
     };
@@ -70,17 +89,45 @@ export const useCards = () => {
     description: string,
     category: CategoryColor,
     priority: Priority,
-    checklist: ChecklistItem[]
+    checklist: ChecklistItem[],
+    imageUrl?: string,
+    dueDate?: Date
   ) => {
     setCards((prev) =>
       prev.map((card) =>
-        card.id === id ? { ...card, title, description, category, priority, checklist } : card
+        card.id === id ? { ...card, title, description, category, priority, checklist, imageUrl, dueDate } : card
       )
     );
   }, []);
 
   const deleteCard = useCallback((id: string) => {
     setCards((prev) => prev.filter((card) => card.id !== id));
+  }, []);
+
+  const duplicateCard = useCallback((id: string) => {
+    setCards((prev) => {
+      const cardToDuplicate = prev.find((card) => card.id === id);
+      if (!cardToDuplicate) return prev;
+      
+      const duplicatedCard: CardData = {
+        ...cardToDuplicate,
+        id: generateId(),
+        title: `${cardToDuplicate.title} (cópia)`,
+        checklist: cardToDuplicate.checklist.map(item => ({
+          ...item,
+          id: generateId(),
+          completed: false,
+        })),
+        createdAt: new Date(),
+        completed: false,
+        completedAt: undefined,
+      };
+      
+      const index = prev.findIndex((card) => card.id === id);
+      const newCards = [...prev];
+      newCards.splice(index + 1, 0, duplicatedCard);
+      return newCards;
+    });
   }, []);
 
   const toggleChecklistItem = useCallback((cardId: string, itemId: string) => {
@@ -112,5 +159,23 @@ export const useCards = () => {
     );
   }, []);
 
-  return { cards, addCard, updateCard, deleteCard, toggleChecklistItem, toggleCardCompleted };
+  const reorderCards = useCallback((sourceIndex: number, destinationIndex: number) => {
+    setCards((prev) => {
+      const result = Array.from(prev);
+      const [removed] = result.splice(sourceIndex, 1);
+      result.splice(destinationIndex, 0, removed);
+      return result;
+    });
+  }, []);
+
+  return { 
+    cards, 
+    addCard, 
+    updateCard, 
+    deleteCard, 
+    duplicateCard,
+    toggleChecklistItem, 
+    toggleCardCompleted,
+    reorderCards,
+  };
 };

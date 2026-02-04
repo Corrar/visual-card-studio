@@ -1,11 +1,14 @@
 import { CardData, CategoryColor, Priority } from '@/types/card';
-import { Pencil, Trash2, CheckCircle2, Circle, Flag, AlertTriangle, AlertCircle, Minus, Check, RotateCcw } from 'lucide-react';
+import { Pencil, Trash2, CheckCircle2, Circle, Flag, AlertTriangle, AlertCircle, Minus, Check, RotateCcw, Copy, Calendar, ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface InfoCardProps {
   card: CardData;
   onEdit: (card: CardData) => void;
   onDelete: (id: string) => void;
+  onDuplicate: (id: string) => void;
   onToggleChecklistItem: (cardId: string, itemId: string) => void;
   onToggleCompleted: (cardId: string) => void;
   index: number;
@@ -20,23 +23,32 @@ const categoryColorClasses: Record<CategoryColor, string> = {
   teal: 'bg-category-teal',
 };
 
-const categoryBgClasses: Record<CategoryColor, string> = {
-  blue: 'bg-category-blue/10',
-  green: 'bg-category-green/10',
-  orange: 'bg-category-orange/10',
-  pink: 'bg-category-pink/10',
-  purple: 'bg-category-purple/10',
-  teal: 'bg-category-teal/10',
+const categoryGradients: Record<CategoryColor, string> = {
+  blue: 'from-category-blue/20 to-category-blue/5',
+  green: 'from-category-green/20 to-category-green/5',
+  orange: 'from-category-orange/20 to-category-orange/5',
+  pink: 'from-category-pink/20 to-category-pink/5',
+  purple: 'from-category-purple/20 to-category-purple/5',
+  teal: 'from-category-teal/20 to-category-teal/5',
 };
 
-const priorityConfig: Record<Priority, { label: string; color: string; bgColor: string; borderColor: string; icon: typeof Flag }> = {
-  low: { label: 'Baixa', color: 'text-priority-low', bgColor: 'bg-priority-low/10', borderColor: 'border-priority-low/30', icon: Minus },
-  medium: { label: 'Média', color: 'text-priority-medium', bgColor: 'bg-priority-medium/10', borderColor: 'border-priority-medium/30', icon: Flag },
-  high: { label: 'Alta', color: 'text-priority-high', bgColor: 'bg-priority-high/10', borderColor: 'border-priority-high/30', icon: AlertTriangle },
-  urgent: { label: 'Urgente', color: 'text-priority-urgent', bgColor: 'bg-priority-urgent/10', borderColor: 'border-priority-urgent/30', icon: AlertCircle },
+const categoryBorderClasses: Record<CategoryColor, string> = {
+  blue: 'border-category-blue/30 hover:border-category-blue/50',
+  green: 'border-category-green/30 hover:border-category-green/50',
+  orange: 'border-category-orange/30 hover:border-category-orange/50',
+  pink: 'border-category-pink/30 hover:border-category-pink/50',
+  purple: 'border-category-purple/30 hover:border-category-purple/50',
+  teal: 'border-category-teal/30 hover:border-category-teal/50',
 };
 
-export const InfoCard = ({ card, onEdit, onDelete, onToggleChecklistItem, onToggleCompleted, index }: InfoCardProps) => {
+const priorityConfig: Record<Priority, { label: string; color: string; bgColor: string; icon: typeof Flag }> = {
+  low: { label: 'Baixa', color: 'text-priority-low', bgColor: 'bg-priority-low', icon: Minus },
+  medium: { label: 'Média', color: 'text-priority-medium', bgColor: 'bg-priority-medium', icon: Flag },
+  high: { label: 'Alta', color: 'text-priority-high', bgColor: 'bg-priority-high', icon: AlertTriangle },
+  urgent: { label: 'Urgente', color: 'text-priority-urgent', bgColor: 'bg-priority-urgent', icon: AlertCircle },
+};
+
+export const InfoCard = ({ card, onEdit, onDelete, onDuplicate, onToggleChecklistItem, onToggleCompleted, index }: InfoCardProps) => {
   const priority = priorityConfig[card.priority];
   const PriorityIcon = priority.icon;
   const completedCount = card.checklist.filter(item => item.completed).length;
@@ -46,75 +58,121 @@ export const InfoCard = ({ card, onEdit, onDelete, onToggleChecklistItem, onTogg
   return (
     <article
       className={cn(
-        'group relative rounded-2xl p-5 card-shadow transition-all duration-300',
-        'hover:card-shadow-hover hover:-translate-y-1',
-        'animate-slide-up overflow-hidden border-2',
+        'group relative rounded-2xl overflow-hidden border-2 transition-all duration-500 ease-out',
+        'bg-gradient-to-br',
+        categoryGradients[card.category],
+        categoryBorderClasses[card.category],
+        'hover-lift card-shadow hover:card-shadow-hover',
         'focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2',
-        priority.borderColor,
-        priority.bgColor,
-        card.completed && 'opacity-75'
+        card.completed && 'opacity-60 grayscale-[30%]'
       )}
-      style={{ animationDelay: `${index * 50}ms` }}
+      style={{ 
+        animationDelay: `${index * 80}ms`,
+      }}
       role="article"
       aria-label={`Card: ${card.title}, Prioridade: ${priority.label}${card.completed ? ', Concluído' : ''}`}
       tabIndex={0}
     >
-      {/* Category indicator */}
+      {/* Category indicator - vertical bar */}
       <div
-        className={cn('category-indicator', categoryColorClasses[card.category])}
+        className={cn(
+          'absolute left-0 top-0 w-1.5 h-full rounded-l-2xl',
+          categoryColorClasses[card.category]
+        )}
         aria-hidden="true"
       />
 
+      {/* Image Section */}
+      {card.imageUrl && (
+        <div className="relative w-full h-36 overflow-hidden">
+          <img 
+            src={card.imageUrl} 
+            alt={`Imagem do card ${card.title}`}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+        </div>
+      )}
+
       {/* Content */}
-      <div className="pl-4">
+      <div className="p-5 pl-6">
         {/* Header with priority and actions */}
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex-1 min-w-0">
-            {/* Priority badge */}
+            {/* Priority badge with animation */}
             <div className="flex items-center gap-2 mb-2">
               <span
                 className={cn(
-                  'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-semibold',
-                  priority.bgColor,
-                  priority.color
+                  'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wide',
+                  'bg-card/80 backdrop-blur-sm border shadow-sm',
+                  priority.color,
+                  card.priority === 'urgent' && 'animate-pulse-scale'
                 )}
                 role="status"
                 aria-label={`Prioridade: ${priority.label}`}
               >
-                <PriorityIcon className="w-3 h-3" aria-hidden="true" />
+                <PriorityIcon className="w-3.5 h-3.5" aria-hidden="true" />
                 {priority.label}
               </span>
+              
+              {card.dueDate && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs bg-muted text-muted-foreground">
+                  <Calendar className="w-3 h-3" />
+                  {format(card.dueDate, 'dd MMM', { locale: ptBR })}
+                </span>
+              )}
             </div>
 
-            <h3 className="font-semibold text-card-foreground text-lg leading-tight line-clamp-2">
+            <h3 className={cn(
+              'font-bold text-card-foreground text-lg leading-tight line-clamp-2 transition-colors',
+              card.completed && 'line-through opacity-70'
+            )}>
               {card.title}
             </h3>
           </div>
 
-          {/* Actions */}
+          {/* Actions with slide-in effect */}
           <div 
-            className="flex gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200"
+            className={cn(
+              'flex gap-0.5 transition-all duration-300',
+              'opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0',
+              'group-focus-within:opacity-100 group-focus-within:translate-x-0'
+            )}
             role="group"
             aria-label="Ações do card"
           >
             <button
               onClick={() => onToggleCompleted(card.id)}
               className={cn(
-                'p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
-                card.completed ? 'hover:bg-secondary bg-secondary/50' : 'hover:bg-primary/10'
+                'p-2 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1',
+                'hover:scale-110 active:scale-95',
+                card.completed 
+                  ? 'hover:bg-secondary bg-secondary/50 text-muted-foreground' 
+                  : 'hover:bg-primary/10 text-primary'
               )}
               aria-label={card.completed ? `Reabrir ${card.title}` : `Marcar ${card.title} como pronto`}
               title={card.completed ? 'Reabrir card' : 'Marcar como pronto'}
             >
               {card.completed ? (
-                <RotateCcw className="w-4 h-4 text-muted-foreground" />
+                <RotateCcw className="w-4 h-4" />
               ) : (
-                <Check className="w-4 h-4 text-primary" />
+                <Check className="w-4 h-4" />
               )}
             </button>
             <button
+              onClick={() => onDuplicate(card.id)}
+              className="p-2 rounded-lg hover:bg-secondary/80 hover:scale-110 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+              aria-label={`Duplicar ${card.title}`}
+              title="Duplicar card"
+            >
+              <Copy className="w-4 h-4 text-muted-foreground" />
+            </button>
+            <button
               onClick={() => onEdit(card)}
-              className="p-2 rounded-lg hover:bg-secondary transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              className="p-2 rounded-lg hover:bg-secondary/80 hover:scale-110 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
               aria-label={`Editar ${card.title}`}
               title="Editar card"
             >
@@ -122,7 +180,7 @@ export const InfoCard = ({ card, onEdit, onDelete, onToggleChecklistItem, onTogg
             </button>
             <button
               onClick={() => onDelete(card.id)}
-              className="p-2 rounded-lg hover:bg-destructive/10 transition-colors focus:outline-none focus:ring-2 focus:ring-destructive focus:ring-offset-2"
+              className="p-2 rounded-lg hover:bg-destructive/10 hover:scale-110 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-destructive focus:ring-offset-1"
               aria-label={`Excluir ${card.title}`}
               title="Excluir card"
             >
@@ -137,13 +195,13 @@ export const InfoCard = ({ card, onEdit, onDelete, onToggleChecklistItem, onTogg
           </p>
         )}
 
-        {/* Checklist section */}
+        {/* Checklist section with enhanced visuals */}
         {card.checklist.length > 0 && (
           <div className="mb-4 space-y-2">
-            {/* Progress bar */}
+            {/* Progress bar with shine effect */}
             <div className="flex items-center gap-2 mb-2">
               <div 
-                className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden"
+                className="flex-1 h-2 bg-muted/50 rounded-full overflow-hidden"
                 role="progressbar"
                 aria-valuenow={completedCount}
                 aria-valuemin={0}
@@ -151,37 +209,46 @@ export const InfoCard = ({ card, onEdit, onDelete, onToggleChecklistItem, onTogg
                 aria-label={`Progresso: ${completedCount} de ${totalCount} itens concluídos`}
               >
                 <div 
-                  className="h-full bg-primary rounded-full transition-all duration-300"
+                  className={cn(
+                    'h-full rounded-full transition-all duration-500 ease-out progress-fill',
+                    categoryColorClasses[card.category]
+                  )}
                   style={{ width: `${progressPercentage}%` }}
                 />
               </div>
-              <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">
+              <span className="text-xs text-muted-foreground font-semibold whitespace-nowrap tabular-nums">
                 {completedCount}/{totalCount}
               </span>
             </div>
 
-            {/* Checklist items */}
-            <ul className="space-y-1.5" aria-label="Checklist">
-              {card.checklist.map((item) => (
-                <li key={item.id}>
+            {/* Checklist items with stagger animation */}
+            <ul className="space-y-1" aria-label="Checklist">
+              {card.checklist.slice(0, 4).map((item, i) => (
+                <li key={item.id} style={{ animationDelay: `${i * 50}ms` }}>
                   <button
                     onClick={() => onToggleChecklistItem(card.id, item.id)}
                     className={cn(
-                      'w-full flex items-start gap-2.5 p-2 rounded-lg text-left transition-all duration-200',
-                      'hover:bg-secondary/60 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1',
-                      item.completed && 'opacity-60'
+                      'w-full flex items-start gap-2.5 p-2 rounded-lg text-left transition-all duration-300',
+                      'hover:bg-card/50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1',
+                      'active:scale-[0.98]',
+                      item.completed && 'opacity-50'
                     )}
                     aria-pressed={item.completed}
                     aria-label={`${item.completed ? 'Desmarcar' : 'Marcar como concluído'}: ${item.text}`}
                   >
-                    {item.completed ? (
-                      <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" aria-hidden="true" />
-                    ) : (
-                      <Circle className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" aria-hidden="true" />
-                    )}
+                    <span className={cn(
+                      'shrink-0 mt-0.5 transition-all duration-300',
+                      item.completed ? 'scale-110' : 'scale-100'
+                    )}>
+                      {item.completed ? (
+                        <CheckCircle2 className={cn('w-4 h-4', categoryColorClasses[card.category].replace('bg-', 'text-'))} aria-hidden="true" />
+                      ) : (
+                        <Circle className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+                      )}
+                    </span>
                     <span 
                       className={cn(
-                        'text-sm leading-tight',
+                        'text-sm leading-tight transition-all duration-300',
                         item.completed && 'line-through text-muted-foreground'
                       )}
                     >
@@ -190,22 +257,33 @@ export const InfoCard = ({ card, onEdit, onDelete, onToggleChecklistItem, onTogg
                   </button>
                 </li>
               ))}
+              {card.checklist.length > 4 && (
+                <li className="text-xs text-muted-foreground pl-2 py-1">
+                  +{card.checklist.length - 4} mais itens
+                </li>
+              )}
             </ul>
           </div>
         )}
 
-        {/* Footer with category */}
-        <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+        {/* Footer with category badge */}
+        <div className="flex items-center justify-between pt-3 border-t border-border/30">
           <span
             className={cn(
-              'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium capitalize',
-              categoryBgClasses[card.category],
-              'text-card-foreground'
+              'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold capitalize',
+              'bg-card/60 backdrop-blur-sm border shadow-sm'
             )}
           >
-            <span className={cn('w-2 h-2 rounded-full mr-1.5', categoryColorClasses[card.category])} />
+            <span className={cn('w-2.5 h-2.5 rounded-full mr-1.5', categoryColorClasses[card.category])} />
             {card.category}
           </span>
+          
+          {!card.imageUrl && (
+            <span className="text-xs text-muted-foreground/50 flex items-center gap-1">
+              <ImageIcon className="w-3 h-3" />
+              Sem imagem
+            </span>
+          )}
         </div>
       </div>
     </article>
