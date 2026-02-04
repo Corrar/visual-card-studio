@@ -15,7 +15,12 @@ export interface CardData {
   category: CategoryColor;
   priority: Priority;
   checklist: ChecklistItem[];
+  imageUrl?: string;
+  dueDate?: Date;
   createdAt: Date;
   completed: boolean;
   completedAt?: Date;
 }
+
+export type FilterType = 'all' | CategoryColor;
+export type PriorityFilter = 'all' | Priority;
