@@ -13,6 +13,7 @@ interface SortableCardProps {
   onToggleChecklistItem: (cardId: string, itemId: string) => void;
   onToggleCompleted: (cardId: string) => void;
   onArchive?: (id: string) => void;
+  onExpand?: (card: CardData) => void;
   index: number;
 }
 
@@ -24,6 +25,7 @@ export const SortableCard = ({
   onToggleChecklistItem,
   onToggleCompleted,
   onArchive,
+  onExpand,
   index,
 }: SortableCardProps) => {
   const {
@@ -74,6 +76,7 @@ export const SortableCard = ({
         onToggleChecklistItem={onToggleChecklistItem}
         onToggleCompleted={onToggleCompleted}
         onArchive={onArchive}
+        onExpand={onExpand}
         index={index}
       />
     </div>

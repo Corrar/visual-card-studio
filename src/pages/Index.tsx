@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
-import { Plus, ListTodo, CheckCircle, Search, LayoutGrid, Bell } from 'lucide-react';
+import { Plus, ListTodo, CheckCircle, Search, LayoutGrid } from 'lucide-react';
 import { useCards } from '@/hooks/useCards';
 import { useDueDateReminders } from '@/hooks/useDueDateReminders';
 import { CardModal } from '@/components/cards/CardModal';
 import { CardFilters } from '@/components/cards/CardFilters';
 import { CardGrid } from '@/components/cards/CardGrid';
+import { CardDetailModal } from '@/components/cards/CardDetailModal';
 import { EmptyState } from '@/components/cards/EmptyState';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { CardData, Priority, ChecklistItem, Tag } from '@/types/card';
@@ -15,13 +16,31 @@ import { cn } from '@/lib/utils';
 import { Toaster } from 'sonner';
 
 const Index = () => {
-  const { cards, addCard, updateCard, deleteCard, duplicateCard, toggleChecklistItem, toggleCardCompleted, archiveCard, reorderCards } = useCards();
+  const { 
+    cards, 
+    addCard, 
+    updateCard, 
+    deleteCard, 
+    duplicateCard, 
+    toggleChecklistItem, 
+    toggleCardCompleted, 
+    archiveCard, 
+    reorderCards,
+    addNote,
+    deleteNote,
+    addChecklistItem,
+    deleteChecklistItem,
+    addChecklistGroup,
+    deleteChecklistGroup,
+    updateEstimatedTime,
+  } = useCards();
   
   // Due date reminders
   const { getUpcomingReminders } = useDueDateReminders(cards);
   const upcomingReminders = getUpcomingReminders();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<CardData | null>(null);
+  const [expandedCard, setExpandedCard] = useState<CardData | null>(null);
   const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
   const [searchQuery, setSearchQuery] = useState('');
   const [priorityFilter, setPriorityFilter] = useState<Priority | 'all'>('all');
@@ -57,6 +76,12 @@ const Index = () => {
   const activeCards = useMemo(() => filteredCards.filter(card => !card.completed), [filteredCards]);
   const completedCards = useMemo(() => filteredCards.filter(card => card.completed), [filteredCards]);
 
+  // Keep expanded card in sync with cards state
+  const currentExpandedCard = useMemo(() => {
+    if (!expandedCard) return null;
+    return cards.find(c => c.id === expandedCard.id) || null;
+  }, [expandedCard, cards]);
+
   const handleOpenCreate = () => {
     setEditingCard(null);
     setIsModalOpen(true);
@@ -65,6 +90,10 @@ const Index = () => {
   const handleOpenEdit = (card: CardData) => {
     setEditingCard(card);
     setIsModalOpen(true);
+  };
+
+  const handleExpand = (card: CardData) => {
+    setExpandedCard(card);
   };
 
   const handleSave = (
@@ -129,6 +158,7 @@ const Index = () => {
         onToggleChecklistItem={toggleChecklistItem}
         onToggleCompleted={toggleCardCompleted}
         onArchive={archiveCard}
+        onExpand={handleExpand}
       />
     )
   );
@@ -260,13 +290,35 @@ const Index = () => {
         }}
       />
 
-      {/* Modal */}
+      {/* Create/Edit Modal */}
       <CardModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={handleSave}
         editingCard={editingCard}
       />
+
+      {/* Detail Modal */}
+      {currentExpandedCard && (
+        <CardDetailModal
+          isOpen={!!currentExpandedCard}
+          onClose={() => setExpandedCard(null)}
+          card={currentExpandedCard}
+          onToggleChecklistItem={toggleChecklistItem}
+          onToggleCompleted={toggleCardCompleted}
+          onEdit={(card) => {
+            setExpandedCard(null);
+            handleOpenEdit(card);
+          }}
+          onAddNote={addNote}
+          onDeleteNote={deleteNote}
+          onAddChecklistItem={addChecklistItem}
+          onDeleteChecklistItem={deleteChecklistItem}
+          onAddChecklistGroup={addChecklistGroup}
+          onDeleteChecklistGroup={deleteChecklistGroup}
+          onUpdateEstimatedTime={updateEstimatedTime}
+        />
+      )}
     </div>
   );
 };
