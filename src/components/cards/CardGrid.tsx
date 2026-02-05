@@ -29,6 +29,7 @@ interface CardGridProps {
   onToggleChecklistItem: (cardId: string, itemId: string) => void;
   onToggleCompleted: (cardId: string) => void;
   onArchive?: (id: string) => void;
+  onExpand?: (card: CardData) => void;
 }
 
 export const CardGrid = ({
@@ -40,6 +41,7 @@ export const CardGrid = ({
   onToggleChecklistItem,
   onToggleCompleted,
   onArchive,
+  onExpand,
 }: CardGridProps) => {
   const [activeCard, setActiveCard] = useState<CardData | null>(null);
 
@@ -96,6 +98,7 @@ export const CardGrid = ({
               onToggleChecklistItem={onToggleChecklistItem}
               onToggleCompleted={onToggleCompleted}
               onArchive={onArchive}
+              onExpand={onExpand}
               index={index}
             />
           ))}

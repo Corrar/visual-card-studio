@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { CardData, Priority, ChecklistItem, Tag } from '@/types/card';
+import { CardData, Priority, ChecklistItem, Tag, ChecklistGroup, CardNote } from '@/types/card';
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
@@ -13,9 +13,11 @@ const initialCards: CardData[] = [
       { id: generateId(), text: 'Criar primeiro card', completed: false },
       { id: generateId(), text: 'Explorar funcionalidades', completed: true },
     ],
+    checklistGroups: [],
     tags: [
       { id: generateId(), name: 'Início', color: 'bg-blue-500' },
     ],
+    notes: [],
     imageUrl: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=400&h=200&fit=crop',
     createdAt: new Date(),
     completed: false,
@@ -28,10 +30,12 @@ const initialCards: CardData[] = [
     checklist: [
       { id: generateId(), text: 'Criar tags personalizadas', completed: false },
     ],
+    checklistGroups: [],
     tags: [
       { id: generateId(), name: 'Dica', color: 'bg-emerald-500' },
       { id: generateId(), name: 'Produtividade', color: 'bg-violet-500' },
     ],
+    notes: [],
     imageUrl: 'https://images.unsplash.com/photo-1557683316-973673baf926?w=400&h=200&fit=crop',
     createdAt: new Date(),
     completed: false,
@@ -45,9 +49,11 @@ const initialCards: CardData[] = [
       { id: generateId(), text: 'Resolver imediatamente', completed: false },
       { id: generateId(), text: 'Notificar equipe', completed: false },
     ],
+    checklistGroups: [],
     tags: [
       { id: generateId(), name: 'Importante', color: 'bg-red-500' },
     ],
+    notes: [],
     createdAt: new Date(),
     completed: false,
   },
@@ -57,12 +63,23 @@ const initialCards: CardData[] = [
     description: 'Interface limpa e minimalista para melhor foco e produtividade.',
     priority: 'high',
     checklist: [],
+    checklistGroups: [],
     tags: [
       { id: generateId(), name: 'UI/UX', color: 'bg-pink-500' },
     ],
+    notes: [],
     createdAt: new Date(),
     completed: false,
   },
+];
+
+const groupColors = [
+  'bg-blue-500',
+  'bg-emerald-500',
+  'bg-violet-500',
+  'bg-orange-500',
+  'bg-pink-500',
+  'bg-cyan-500',
 ];
 
 export const useCards = () => {
@@ -83,7 +100,9 @@ export const useCards = () => {
       description,
       priority,
       checklist,
+      checklistGroups: [],
       tags,
+      notes: [],
       imageUrl,
       dueDate,
       createdAt: new Date(),
@@ -127,10 +146,15 @@ export const useCards = () => {
           id: generateId(),
           completed: false,
         })),
+        checklistGroups: cardToDuplicate.checklistGroups.map(group => ({
+          ...group,
+          id: generateId(),
+        })),
         tags: cardToDuplicate.tags.map(tag => ({
           ...tag,
           id: generateId(),
         })),
+        notes: [],
         createdAt: new Date(),
         completed: false,
         completedAt: undefined,
@@ -185,6 +209,107 @@ export const useCards = () => {
     setCards((prev) => prev.filter((card) => card.id !== id));
   }, []);
 
+  // New functions for enhanced card management
+  const addNote = useCallback((cardId: string, content: string) => {
+    setCards((prev) =>
+      prev.map((card) =>
+        card.id === cardId
+          ? {
+              ...card,
+              notes: [
+                ...card.notes,
+                { id: generateId(), content, createdAt: new Date() },
+              ],
+            }
+          : card
+      )
+    );
+  }, []);
+
+  const deleteNote = useCallback((cardId: string, noteId: string) => {
+    setCards((prev) =>
+      prev.map((card) =>
+        card.id === cardId
+          ? {
+              ...card,
+              notes: card.notes.filter((note) => note.id !== noteId),
+            }
+          : card
+      )
+    );
+  }, []);
+
+  const addChecklistItem = useCallback((cardId: string, text: string, groupId?: string) => {
+    setCards((prev) =>
+      prev.map((card) =>
+        card.id === cardId
+          ? {
+              ...card,
+              checklist: [
+                ...card.checklist,
+                { id: generateId(), text, completed: false, groupId },
+              ],
+            }
+          : card
+      )
+    );
+  }, []);
+
+  const deleteChecklistItem = useCallback((cardId: string, itemId: string) => {
+    setCards((prev) =>
+      prev.map((card) =>
+        card.id === cardId
+          ? {
+              ...card,
+              checklist: card.checklist.filter((item) => item.id !== itemId),
+            }
+          : card
+      )
+    );
+  }, []);
+
+  const addChecklistGroup = useCallback((cardId: string, name: string) => {
+    setCards((prev) =>
+      prev.map((card) => {
+        if (card.id !== cardId) return card;
+        const colorIndex = card.checklistGroups.length % groupColors.length;
+        return {
+          ...card,
+          checklistGroups: [
+            ...card.checklistGroups,
+            { id: generateId(), name, color: groupColors[colorIndex] },
+          ],
+        };
+      })
+    );
+  }, []);
+
+  const deleteChecklistGroup = useCallback((cardId: string, groupId: string) => {
+    setCards((prev) =>
+      prev.map((card) =>
+        card.id === cardId
+          ? {
+              ...card,
+              checklistGroups: card.checklistGroups.filter((g) => g.id !== groupId),
+              checklist: card.checklist.map((item) =>
+                item.groupId === groupId ? { ...item, groupId: undefined } : item
+              ),
+            }
+          : card
+      )
+    );
+  }, []);
+
+  const updateEstimatedTime = useCallback((cardId: string, minutes: number) => {
+    setCards((prev) =>
+      prev.map((card) =>
+        card.id === cardId
+          ? { ...card, estimatedTime: minutes }
+          : card
+      )
+    );
+  }, []);
+
   return { 
     cards, 
     addCard, 
@@ -195,5 +320,12 @@ export const useCards = () => {
     toggleCardCompleted,
     reorderCards,
     archiveCard,
+    addNote,
+    deleteNote,
+    addChecklistItem,
+    deleteChecklistItem,
+    addChecklistGroup,
+    deleteChecklistGroup,
+    updateEstimatedTime,
   };
 };

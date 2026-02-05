@@ -1,5 +1,5 @@
 import { CardData, Priority } from '@/types/card';
-import { Pencil, Trash2, CheckCircle2, Circle, Flag, AlertTriangle, AlertCircle, Minus, Check, RotateCcw, Copy, Calendar, Archive } from 'lucide-react';
+import { Pencil, Trash2, CheckCircle2, Circle, Flag, AlertTriangle, AlertCircle, Minus, Check, RotateCcw, Copy, Calendar, Archive, Maximize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -12,6 +12,7 @@ interface InfoCardProps {
   onToggleChecklistItem: (cardId: string, itemId: string) => void;
   onToggleCompleted: (cardId: string) => void;
   onArchive?: (id: string) => void;
+  onExpand?: (card: CardData) => void;
   index: number;
 }
 
@@ -22,7 +23,7 @@ const priorityConfig: Record<Priority, { label: string; color: string; bgColor: 
   urgent: { label: 'Urgente', color: 'text-priority-urgent', bgColor: 'bg-priority-urgent', glowClass: 'priority-glow-urgent', icon: AlertCircle },
 };
 
-export const InfoCard = ({ card, onEdit, onDelete, onDuplicate, onToggleChecklistItem, onToggleCompleted, onArchive, index }: InfoCardProps) => {
+export const InfoCard = ({ card, onEdit, onDelete, onDuplicate, onToggleChecklistItem, onToggleCompleted, onArchive, onExpand, index }: InfoCardProps) => {
   const priority = priorityConfig[card.priority];
   const PriorityIcon = priority.icon;
   const completedCount = card.checklist.filter(item => item.completed).length;
@@ -135,6 +136,16 @@ export const InfoCard = ({ card, onEdit, onDelete, onDuplicate, onToggleChecklis
                 <Check className="w-4 h-4" />
               )}
             </button>
+            {onExpand && (
+              <button
+                onClick={() => onExpand(card)}
+                className="p-2 rounded-lg hover:bg-secondary/80 hover:scale-110 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+                aria-label={`Expandir ${card.title}`}
+                title="Visualização completa"
+              >
+                <Maximize2 className="w-4 h-4 text-muted-foreground" />
+              </button>
+            )}
             <button
               onClick={() => onDuplicate(card.id)}
               className="p-2 rounded-lg hover:bg-secondary/80 hover:scale-110 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
