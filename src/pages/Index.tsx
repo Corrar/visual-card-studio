@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
-import { Plus, Sparkles, ListTodo, CheckCircle, Search, LayoutGrid } from 'lucide-react';
+import { Plus, ListTodo, CheckCircle, Search, LayoutGrid, Bell } from 'lucide-react';
 import { useCards } from '@/hooks/useCards';
-import { InfoCard } from '@/components/cards/InfoCard';
+import { useDueDateReminders } from '@/hooks/useDueDateReminders';
 import { CardModal } from '@/components/cards/CardModal';
 import { CardFilters } from '@/components/cards/CardFilters';
+import { CardGrid } from '@/components/cards/CardGrid';
 import { EmptyState } from '@/components/cards/EmptyState';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { CardData, Priority, ChecklistItem, Tag } from '@/types/card';
@@ -11,9 +12,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import { Toaster } from 'sonner';
 
 const Index = () => {
-  const { cards, addCard, updateCard, deleteCard, duplicateCard, toggleChecklistItem, toggleCardCompleted, archiveCard } = useCards();
+  const { cards, addCard, updateCard, deleteCard, duplicateCard, toggleChecklistItem, toggleCardCompleted, archiveCard, reorderCards } = useCards();
+  
+  // Due date reminders
+  const { getUpcomingReminders } = useDueDateReminders(cards);
+  const upcomingReminders = getUpcomingReminders();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<CardData | null>(null);
   const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
@@ -83,9 +89,9 @@ const Index = () => {
     setSearchQuery('');
   };
 
-  const renderCards = (cardList: CardData[]) => (
+  const renderCards = (cardList: CardData[], isActive: boolean) => (
     cardList.length === 0 ? (
-      activeTab === 'active' ? (
+      isActive ? (
         searchQuery || priorityFilter !== 'all' || tagFilter !== '' ? (
           <div className="flex flex-col items-center justify-center py-16 text-center animate-fade-in">
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
@@ -114,25 +120,16 @@ const Index = () => {
         </div>
       )
     ) : (
-      <div 
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 stagger-animation"
-        role="feed"
-        aria-label={activeTab === 'active' ? 'Cards ativos' : 'Cards concluídos'}
-      >
-        {cardList.map((card, index) => (
-          <InfoCard
-            key={card.id}
-            card={card}
-            onEdit={handleOpenEdit}
-            onDelete={deleteCard}
-            onDuplicate={duplicateCard}
-            onToggleChecklistItem={toggleChecklistItem}
-            onToggleCompleted={toggleCardCompleted}
-            onArchive={archiveCard}
-            index={index}
-          />
-        ))}
-      </div>
+      <CardGrid
+        cards={cardList}
+        onReorder={reorderCards}
+        onEdit={handleOpenEdit}
+        onDelete={deleteCard}
+        onDuplicate={duplicateCard}
+        onToggleChecklistItem={toggleChecklistItem}
+        onToggleCompleted={toggleCardCompleted}
+        onArchive={archiveCard}
+      />
     )
   );
 
@@ -236,7 +233,7 @@ const Index = () => {
               <CheckCircle className="w-4 h-4" />
               Concluídos
               {completedCards.length > 0 && (
-                <span className="ml-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
+                <span className="ml-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">
                   {completedCards.length}
                 </span>
               )}
@@ -244,14 +241,24 @@ const Index = () => {
           </TabsList>
 
           <TabsContent value="active" className="animate-fade-in">
-            {renderCards(activeCards)}
+            {renderCards(activeCards, true)}
           </TabsContent>
 
           <TabsContent value="completed" className="animate-fade-in">
-            {renderCards(completedCards)}
+            {renderCards(completedCards, false)}
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Toaster for notifications */}
+      <Toaster 
+        position="top-right" 
+        richColors 
+        closeButton
+        toastOptions={{
+          className: 'text-sm',
+        }}
+      />
 
       {/* Modal */}
       <CardModal
